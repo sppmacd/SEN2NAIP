@@ -53,7 +53,6 @@ class Dataset(torch.utils.data.Dataset):
 
 
 def cvimage(img):
-    print(img.min(), img.max(), img)
     return np.transpose(img[:3] * 255, (1, 2, 0)).astype(np.uint8)
 
 
@@ -100,20 +99,6 @@ def run(config: ConfigBox, live: dvclive.Live):
     def dvclive_log(engine):
         live.log_metric("train_loss", engine.state.output)
         live.next_step()
-
-    @trainer.on(Events.ITERATION_COMPLETED(every=log_interval))
-    def log_training_loss(engine):
-        print(
-            f"Epoch[{engine.state.epoch}], Iter[{engine.state.iteration}] Loss: {engine.state.output:.2f}"
-        )
-
-    @trainer.on(Events.EPOCH_COMPLETED)
-    def log_training_results(trainer):
-        train_evaluator.run(train_loader)
-        metrics = train_evaluator.state.metrics
-        print(
-            f"Training Results - Epoch[{trainer.state.epoch}] Avg loss: {metrics['loss']:.5f}"
-        )
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):

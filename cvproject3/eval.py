@@ -50,6 +50,7 @@ with dvclive.Live(dir="dvclive/eval") as live:
 
     # Show some random prediction
     lr, hr = dataset[len(dataset) // 2]
+    print(lr.max(), hr.max())
     with torch.no_grad():
         upscaled = model(lr.unsqueeze(0).to(device)).squeeze(0).cpu()
     ts.print(lr, hr, upscaled)
