@@ -8,3 +8,8 @@ and train a model to upscale them back.
 References:
 
 - [1] https://www.nature.com/articles/s41597-024-04214-y
+
+https://medium.com/@mickael.boillaud/streamline-your-ml-pipeline-a-comprehensive-guide-to-dvc-data-version-control-97251730b1cf
+DVC docs
+PyTorch-Ignite cods
+https://github.com/treeverse/example-get-started/blob/main/src/evaluate.py

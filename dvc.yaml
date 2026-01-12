@@ -1,0 +1,23 @@
+stages:
+  generate_dataset:
+    cmd: python -m cvproject3.dataset
+    deps:
+    - cvproject3/data.py
+    - cvproject3/dataset.py
+    outs:
+    - data
+  train:
+    cmd: python -m cvproject3.train
+    deps:
+    - cvproject3/models.py
+    - cvproject3/train.py
+    - data
+    params:
+    - train.batch_size
+    outs:
+    - models/best.pt
+metrics:
+- dvclive/metrics.json
+plots:
+- dvclive/plots/metrics:
+    x: step

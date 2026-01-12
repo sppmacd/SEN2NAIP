@@ -1,0 +1,43 @@
+schema: '2.0'
+stages:
+  generate_dataset:
+    cmd: python -m cvproject3.dataset
+    deps:
+    - path: cvproject3/data.py
+      hash: md5
+      md5: a14b7f476f09a976e68d80577e895d2a
+      size: 2713
+    - path: cvproject3/dataset.py
+      hash: md5
+      md5: 30b721815780393f11e7379634c8a19f
+      size: 1136
+    outs:
+    - path: data
+      hash: md5
+      md5: a502e1e6a16190d31f6e2f20ae52f011.dir
+      size: 3340824608
+      nfiles: 5702
+  train:
+    cmd: python -m cvproject3.train
+    deps:
+    - path: cvproject3/models.py
+      hash: md5
+      md5: b58d04d2a315bdeddc311787bcfb768e
+      size: 783
+    - path: cvproject3/train.py
+      hash: md5
+      md5: 5ce3059668d54cf4a36f5718d7cba6ea
+      size: 5458
+    - path: data
+      hash: md5
+      md5: a502e1e6a16190d31f6e2f20ae52f011.dir
+      size: 3340824608
+      nfiles: 5702
+    params:
+      params.yaml:
+        train.batch_size: 16
+    outs:
+    - path: models/best.pt
+      hash: md5
+      md5: 3797dbc96b926263d9bdf611129a56bb
+      size: 2072
