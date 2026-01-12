@@ -18,7 +18,7 @@ from .train import Dataset, cvimage
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model = Model().to(device)
-model.load_state_dict(torch.load("models/best.pt"))
+# model.load_state_dict(torch.load("models/best.pt"))
 
 
 test_metrics = {

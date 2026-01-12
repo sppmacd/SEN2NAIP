@@ -6,6 +6,11 @@ from .model_impls.unet import UNet
 # and return (B, C, W*2, H*2) upscaled image
 
 
+class BaselineModel(torch.nn.Module):
+    def forward(self, x):
+        return torch.nn.Upsample(scale_factor=2, mode="nearest")(x)
+
+
 class SimpleModel(torch.nn.Module):
     """A simple model with just one conv layer.
 
@@ -32,4 +37,4 @@ class UNetModel(torch.nn.Module):
         return xup + self.unet(xup)
 
 
-Model = UNetModel
+Model = BaselineModel
