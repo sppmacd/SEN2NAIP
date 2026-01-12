@@ -109,6 +109,11 @@ def run(config: ConfigBox, live: dvclive.Live):
         )
         live.log_metric("val_loss", metrics["loss"])
 
+    @trainer.on(Events.COMPLETED)
+    def log_training_time(trainer):
+        print(f"Total time: {trainer.state.times['COMPLETED']}")
+        live.log_metric("train_time", trainer.state.times["COMPLETED"])
+
     # Score function to return current value of any metric we defined above in val_metrics
     def score_function(engine):
         return engine.state.metrics["loss"]

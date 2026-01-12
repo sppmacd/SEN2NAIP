@@ -14,3 +14,6 @@ DVC docs
 PyTorch-Ignite docs
 DVC example: https://github.com/treeverse/example-get-started/blob/main/src/evaluate.py
 Metrics: https://acta.imeko.org/index.php/acta-imeko/article/download/1679/2939
+U-Net impl: https://github.com/milesial/Pytorch-UNet/
+
+UNet_first_run time: ~50min

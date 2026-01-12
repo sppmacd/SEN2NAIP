@@ -10,6 +10,7 @@ stages:
     cmd: python -m cvproject3.train
     deps:
     - cvproject3/models.py
+    - cvproject3/model_impls
     - cvproject3/train.py
     - data
     params:
