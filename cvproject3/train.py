@@ -23,7 +23,7 @@ from torchvision.transforms import Compose, ToTensor
 
 import dvclive
 
-from .models import SimpleModel
+from .models import Model
 
 
 class Dataset(torch.utils.data.Dataset):
@@ -56,7 +56,7 @@ def run(config: ConfigBox, live: dvclive.Live):
     print(config)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = SimpleModel().to(device)
+    model = Model().to(device)
 
     batch_size = config.train.batch_size
 
@@ -163,6 +163,8 @@ def run(config: ConfigBox, live: dvclive.Live):
         )
 
     ProgressBar().attach(trainer, output_transform=lambda x: {"batch loss": x})
+    ProgressBar().attach(train_evaluator)
+    ProgressBar().attach(val_evaluator)
 
     trainer.run(train_loader, max_epochs=1)
 
@@ -177,5 +179,5 @@ def run(config: ConfigBox, live: dvclive.Live):
 
 
 if __name__ == "__main__":
-    with open("params.yaml", "r") as f, dvclive.Live() as live:
+    with open("params.yaml", "r") as f, dvclive.Live(dir="dvclive/train") as live:
         run(ConfigBox(yaml.safe_load(f), box_dots=True), live)

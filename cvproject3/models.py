@@ -12,7 +12,7 @@ import torch
 # and return (B, C, W*2, H*2)
 
 
-class SimpleModel(torch.nn.Module):
+class Model(torch.nn.Module):
     """A simple model with just one conv layer.
 
     Just to see if the dvc+ignite setup works.

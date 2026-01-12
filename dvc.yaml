@@ -16,8 +16,16 @@ stages:
     - train.batch_size
     outs:
     - models/best.pt
+  eval:
+    cmd: python -m cvproject3.eval
+    deps:
+    - cvproject3
+    - models/best.pt
 metrics:
-- dvclive/metrics.json
+- dvclive/train/metrics.json
+- dvclive/eval/metrics.json
 plots:
-- dvclive/plots/metrics:
+- dvclive/train/plots/metrics:
+    x: step
+- dvclive/eval/plots/metrics:
     x: step
