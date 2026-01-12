@@ -26,8 +26,8 @@ stages:
       size: 777
     - path: cvproject3/train.py
       hash: md5
-      md5: 3961f402b0c4bf7009e46562f807b162
-      size: 5547
+      md5: 00847c1641f8b2fde4d7a04d16c0358d
+      size: 5889
     - path: data
       hash: md5
       md5: a502e1e6a16190d31f6e2f20ae52f011.dir
@@ -39,17 +39,17 @@ stages:
     outs:
     - path: models/best.pt
       hash: md5
-      md5: 654cf8e5fafea8eaf003973df47b9c4c
+      md5: d28e37c72c3c1a42732ce96e0b712778
       size: 2072
   eval:
     cmd: python -m cvproject3.eval
     deps:
     - path: cvproject3
       hash: md5
-      md5: 3a04cf92b96aae07b8a029c38ae96546.dir
-      size: 37442
+      md5: 5211b2f1fe112adfccec3858d6f3e821.dir
+      size: 39950
       nfiles: 14
     - path: models/best.pt
       hash: md5
-      md5: 654cf8e5fafea8eaf003973df47b9c4c
+      md5: d28e37c72c3c1a42732ce96e0b712778
       size: 2072

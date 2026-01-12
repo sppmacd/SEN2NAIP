@@ -52,6 +52,11 @@ class Dataset(torch.utils.data.Dataset):
         return t(lr_image), t(hr_image)
 
 
+def cvimage(img):
+    print(img.min(), img.max(), img)
+    return np.transpose(img[:3] * 255, (1, 2, 0)).astype(np.uint8)
+
+
 def run(config: ConfigBox, live: dvclive.Live):
     print(config)
 
@@ -60,9 +65,13 @@ def run(config: ConfigBox, live: dvclive.Live):
 
     batch_size = config.train.batch_size
 
-    train_loader = DataLoader(
-        Dataset("data/train"), shuffle=True, batch_size=batch_size
-    )
+    # Show some random prediction
+    train_dataset = Dataset("data/train")
+    lr, hr = train_dataset[len(train_dataset) // 2]
+    live.log_image("low_res.png", cvimage(lr.numpy()))
+    live.log_image("high_res.png", cvimage(hr.numpy()))
+
+    train_loader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     val_loader = DataLoader(Dataset("data/val"), shuffle=True, batch_size=batch_size)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
