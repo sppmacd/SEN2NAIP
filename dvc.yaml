@@ -23,12 +23,12 @@ stages:
     - cvproject3
     - models/best.pt
 metrics:
-- dvclive/train/metrics.json
 - dvclive/eval/metrics.json
+- dvclive/train/metrics.json
 plots:
-- dvclive/train/plots/metrics:
-    x: step
-- dvclive/train/plots/images
 - dvclive/eval/plots/metrics:
     x: step
 - dvclive/eval/plots/images
+- dvclive/train/plots/metrics:
+    x: step
+- dvclive/train/plots/images

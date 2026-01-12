@@ -37,4 +37,4 @@ class UNetModel(torch.nn.Module):
         return xup + self.unet(xup)
 
 
-Model = BaselineModel
+Model = UNetModel

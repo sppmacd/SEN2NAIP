@@ -1,2 +1,4 @@
 train:
   batch_size: 2
+  gradient_accumulation_steps: 16
+  loss: 'rmsprop'
