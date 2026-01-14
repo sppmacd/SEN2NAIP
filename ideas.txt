@@ -1,0 +1,10 @@
+2 podejścia
+- Pre-upsampling (klasyczne up + wyostrzanie)
+- Post-upsampling (najpierw sieć a na końcu upsampling)
+
+SRCNN - wolny
+FSRCNN - zmniejszenie obrazka, na końcu ConvTranspose, słabe
+SRGAN - ~resnet + upsampling (pixel shuffle), uczone GAN
+MSRGAN
+EDSR
+CARN

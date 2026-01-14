@@ -29,7 +29,7 @@ from .models import Model
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, path: str):
-        self.hr_images = list(Path(path).glob("*.hr.npz"))
+        self.hr_images = list(Path(path).glob("*.hr.npz"))[:128]
 
     @staticmethod
     def _transform():
@@ -311,7 +311,7 @@ def run(config: ConfigBox, live: dvclive.Live):
     ProgressBar().attach(trainer, output_transform=lambda x: {"batch loss": x})
     ProgressBar().attach(val_evaluator)
 
-    trainer.run(train_loader, max_epochs=100)
+    trainer.run(train_loader, max_epochs=5)
     torch.save(model.state_dict(), "models/best.pt")
 
     # after training, rename the best checkpoint to models/best.pt

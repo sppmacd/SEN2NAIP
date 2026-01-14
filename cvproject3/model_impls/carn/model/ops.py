@@ -38,7 +38,7 @@ class BasicBlock(nn.Module):
 
         self.body = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, ksize, stride, pad),
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(inplace=True),
         )
 
         init_weights(self.modules)
@@ -54,7 +54,7 @@ class ResidualBlock(nn.Module):
 
         self.body = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, 3, 1, 1),
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(inplace=True),
             nn.Conv2d(out_channels, out_channels, 3, 1, 1),
         )
 
@@ -62,7 +62,7 @@ class ResidualBlock(nn.Module):
 
     def forward(self, x):
         out = self.body(x)
-        out = F.relu(out + x)
+        out = F.leaky_relu(out + x)
         return out
 
 
@@ -72,9 +72,9 @@ class EResidualBlock(nn.Module):
 
         self.body = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, 3, 1, 1, groups=group),
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(inplace=True),
             nn.Conv2d(out_channels, out_channels, 3, 1, 1, groups=group),
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(inplace=True),
             nn.Conv2d(out_channels, out_channels, 1, 1, 0),
         )
 
@@ -82,7 +82,7 @@ class EResidualBlock(nn.Module):
 
     def forward(self, x):
         out = self.body(x)
-        out = F.relu(out + x)
+        out = F.leaky_relu(out + x)
         return out
 
 
@@ -120,13 +120,13 @@ class _UpsampleBlock(nn.Module):
             for _ in range(int(math.log(scale, 2))):
                 modules += [
                     nn.Conv2d(n_channels, 4 * n_channels, 3, 1, 1, groups=group),
-                    nn.ReLU(inplace=True),
+                    nn.LeakyReLU(inplace=True),
                 ]
                 modules += [nn.PixelShuffle(2)]
         elif scale == 3:
             modules += [
                 nn.Conv2d(n_channels, 9 * n_channels, 3, 1, 1, groups=group),
-                nn.ReLU(inplace=True),
+                nn.LeakyReLU(inplace=True),
             ]
             modules += [nn.PixelShuffle(3)]
 
