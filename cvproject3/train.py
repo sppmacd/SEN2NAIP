@@ -23,6 +23,7 @@ from torchvision.transforms import Compose, ToTensor
 
 import dvclive
 
+from .model_impls.content_loss import resnet18_content_loss
 from .models import Model
 
 
@@ -52,6 +53,110 @@ class Dataset(torch.utils.data.Dataset):
         return t(lr_image), t(hr_image)
 
 
+import torch
+import torch.nn as nn
+
+
+# 1) Weight Signal-to-Noise Ratio (SNR)
+# Measures mean(|w|) / (std(w) + eps) aggregated across learnable params.
+# Returns a single scalar (log-SNR) so values are more stable and comparable.
+def weight_snr(model: nn.Module, eps: float = 1e-8) -> torch.Tensor:
+    """
+    Compute a log signal-to-noise ratio across model parameters.
+    Higher values indicate larger mean absolute weights relative to std (more 'coherent' signal).
+    """
+    means = []
+    stds = []
+    for p in model.parameters():
+        if p.numel() == 0:
+            continue
+        w = p.detach()
+        # ignore parameters that are effectively scalar bias with no variance? still include
+        means.append(w.abs().mean())
+        stds.append(w.std(unbiased=False))
+    if not means:
+        return torch.tensor(float("nan"))
+    means = torch.stack(means)
+    stds = torch.stack(stds)
+    snr = means / (stds + eps)  # per-parameter tensor
+    # aggregate by taking robust mean: median of per-param SNRs, then log1p for stability
+    median_snr = snr.median()
+    return torch.log1p(median_snr)
+
+
+# 2) Gradient Norm Sparsity
+# Fraction of gradient elements whose absolute value is below a small threshold.
+# Useful to detect collapse / dead parameters or extremely small updates.
+def grad_norm_sparsity(model: nn.Module, threshold: float = 1e-6) -> torch.Tensor:
+    """
+    Compute fraction of parameter gradient elements with abs < threshold.
+    Requires gradients to be present (after backward). If no grad for any param, returns nan.
+    """
+    total = 0
+    near_zero = 0
+    for p in model.parameters():
+        if p.grad is None:
+            continue
+        g = p.grad.detach()
+        n = g.numel()
+        if n == 0:
+            continue
+        total += n
+        near_zero += int((g.abs() < threshold).sum().item())
+    if total == 0:
+        return torch.tensor(float("nan"))
+    return torch.tensor(near_zero / total, dtype=torch.float32)
+
+
+# 3) Empirical Fisher Trace Estimate (single-batch)
+# Approximates trace of empirical Fisher Information matrix by summing squared gradients
+# normalized per-parameter dimension. This captures effective curvature magnitude.
+def fisher_trace_estimate(model: nn.Module, normalize: bool = True) -> torch.Tensor:
+    """
+    Compute an empirical Fisher trace proxy using squared gradients:
+    trace_est = sum( (g^2).mean() ) over parameters  (optionally normalized by number of params)
+    Requires gradients to be present (after backward). Returns scalar tensor.
+    """
+    sq_means = []
+    for p in model.parameters():
+        if p.grad is None:
+            continue
+        g = p.grad.detach()
+        if g.numel() == 0:
+            continue
+        # use mean of squared grads for stability across sizes
+        sq_means.append((g * g).mean())
+    if not sq_means:
+        return torch.tensor(float("nan"))
+    total = torch.stack(sq_means).sum()
+    if normalize:
+        # normalize by number of parameter tensors to avoid scale differences between architectures
+        total = total / float(len(sq_means))
+    # return log1p to keep metric on reasonable scale
+    return torch.log1p(total)
+
+
+def grad_L2(model: nn.Module, eps: float = 1e-12) -> torch.Tensor:
+    """
+    Compute global L2 norm of gradients across all parameters:
+    ||g||_2 = sqrt(sum_i sum_j g_ij^2)
+    Returns NaN if no parameter has a gradient.
+    """
+    sq_sum = None
+    for p in model.parameters():
+        if p.grad is None:
+            continue
+        g = p.grad.detach()
+        if g.numel() == 0:
+            continue
+        # accumulate in float32 for stability
+        val = float((g.float() ** 2).sum().cpu().item())
+        sq_sum = val if sq_sum is None else sq_sum + val
+    if sq_sum is None:
+        return torch.tensor(float("nan"))
+    return torch.tensor((sq_sum + eps) ** 0.5)
+
+
 def cvimage(img):
     return np.transpose(img[:3] * 255, (1, 2, 0)).astype(np.uint8)
 
@@ -69,17 +174,25 @@ def run(config: ConfigBox, live: dvclive.Live):
     lr, hr = train_dataset[len(train_dataset) // 2]
     live.log_image("low_res.png", cvimage(lr.numpy()))
     live.log_image("high_res.png", cvimage(hr.numpy()))
+    live.log_image(
+        "prediction_random.png",
+        cvimage(model(lr.to(device).unsqueeze(0)).squeeze(0).cpu().detach().numpy()),
+    )
 
     train_loader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     val_loader = DataLoader(Dataset("data/val"), shuffle=True, batch_size=batch_size)
 
-    match config.train.loss:
+    match config.train.optimizer:
         case "adam":
-            optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
+            optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
         case "rmsprop":
-            optimizer = torch.optim.RMSprop(model.parameters(), lr=0.005)
+            optimizer = torch.optim.RMSprop(model.parameters(), lr=1e-3)
 
-    criterion = nn.MSELoss()
+    match config.train.loss:
+        case "mse":
+            criterion = nn.MSELoss()
+        case "resnet18":
+            criterion = resnet18_content_loss
 
     trainer = create_supervised_trainer(
         model,
@@ -93,11 +206,6 @@ def run(config: ConfigBox, live: dvclive.Live):
         "loss": Loss(criterion),
     }
 
-    train_evaluator = create_supervised_evaluator(
-        model,
-        metrics=val_metrics,
-        device=device,
-    )
     val_evaluator = create_supervised_evaluator(
         model,
         metrics=val_metrics,
@@ -106,10 +214,38 @@ def run(config: ConfigBox, live: dvclive.Live):
 
     log_interval = 10
 
+    @trainer.on(Events.ITERATION_COMPLETED(every=5))
+    def tb_log_dynamics(engine):
+        tb_logger.add_scalar(
+            "weight_snr",
+            weight_snr(model),
+            engine.state.iteration,
+        )
+        tb_logger.add_scalar(
+            "grad_norm_sparsity",
+            grad_norm_sparsity(model),
+            engine.state.iteration,
+        )
+        tb_logger.add_scalar(
+            "fisher_trace_estimate",
+            fisher_trace_estimate(model),
+            engine.state.iteration,
+        )
+        tb_logger.add_scalar(
+            "grad_L2",
+            grad_L2(model),
+            engine.state.iteration,
+        )
+
     @trainer.on(Events.ITERATION_COMPLETED)
-    def dvclive_log(engine):
-        live.log_metric("train_loss", engine.state.output)
+    def dvclive_log_step(engine):
         live.next_step()
+
+    @trainer.on(
+        Events.ITERATION_COMPLETED(every=config.train.gradient_accumulation_steps),
+    )
+    def dvclive_log_loss(engine):
+        live.log_metric("train_loss", engine.state.output)
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):
@@ -139,6 +275,7 @@ def run(config: ConfigBox, live: dvclive.Live):
         global_step_transform=global_step_from_engine(
             trainer,
         ),  # helps fetch the trainer's state
+        require_empty=False,
     )
 
     # Save the model after every epoch of val_evaluator is completed
@@ -161,7 +298,6 @@ def run(config: ConfigBox, live: dvclive.Live):
 
     # Attach handler for plotting both evaluators' metrics after every epoch completes
     for tag, evaluator in [
-        ("training", train_evaluator),
         ("validation", val_evaluator),
     ]:
         tb_logger.attach_output_handler(
@@ -173,19 +309,19 @@ def run(config: ConfigBox, live: dvclive.Live):
         )
 
     ProgressBar().attach(trainer, output_transform=lambda x: {"batch loss": x})
-    ProgressBar().attach(train_evaluator)
     ProgressBar().attach(val_evaluator)
 
-    trainer.run(train_loader, max_epochs=1)
+    trainer.run(train_loader, max_epochs=100)
+    torch.save(model.state_dict(), "models/best.pt")
 
     # after training, rename the best checkpoint to models/best.pt
-    best_path = model_checkpoint.last_checkpoint  # full path to the chosen best file
-    os.makedirs("models", exist_ok=True)
-    if best_path:
-        target = os.path.join("models", "best.pt")
-        # overwrite if exists
-        if os.path.abspath(best_path) != os.path.abspath(target):
-            os.replace(best_path, target)
+    # best_path = model_checkpoint.last_checkpoint  # full path to the chosen best file
+    # os.makedirs("models", exist_ok=True)
+    # if best_path:
+    #     target = os.path.join("models", "best.pt")
+    #     # overwrite if exists
+    #     if os.path.abspath(best_path) != os.path.abspath(target):
+    #         os.replace(best_path, target)
 
 
 if __name__ == "__main__":
