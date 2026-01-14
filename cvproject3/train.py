@@ -24,12 +24,13 @@ from torchvision.transforms import Compose, ToTensor
 import dvclive
 
 from .model_impls.content_loss import resnet18_content_loss
+from .model_impls.gan import create_gan_trainer, ResNet18Discriminator
 from .models import Model
 
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, path: str):
-        self.hr_images = list(Path(path).glob("*.hr.npz"))[:128]
+        self.hr_images = list(Path(path).glob("*.hr.npz"))[:512]
 
     @staticmethod
     def _transform():
@@ -157,6 +158,20 @@ def grad_L2(model: nn.Module, eps: float = 1e-12) -> torch.Tensor:
     return torch.tensor((sq_sum + eps) ** 0.5)
 
 
+def weights_L2(model: nn.Module, eps: float = 1e-12) -> torch.Tensor:
+    """L2 norm of weights."""
+    sq_sum = None
+    for p in model.parameters():
+        if p.numel() == 0:
+            continue
+        # accumulate in float32 for stability
+        val = float((p.float() ** 2).sum().cpu().item())
+        sq_sum = val if sq_sum is None else sq_sum + val
+    if sq_sum is None:
+        return torch.tensor(float("nan"))
+    return torch.tensor((sq_sum + eps) ** 0.5)
+
+
 def cvimage(img):
     return np.transpose(img[:3] * 255, (1, 2, 0)).astype(np.uint8)
 
@@ -164,8 +179,12 @@ def cvimage(img):
 def run(config: ConfigBox, live: dvclive.Live):
     print(config)
 
+    torch.autograd.set_detect_anomaly(True)
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = Model().to(device)
+    # device = torch.device("cpu")
+    generator_model = Model().to(device)
+    discriminator_model = ResNet18Discriminator().to(device)
 
     batch_size = config.train.batch_size
 
@@ -176,7 +195,13 @@ def run(config: ConfigBox, live: dvclive.Live):
     live.log_image("high_res.png", cvimage(hr.numpy()))
     live.log_image(
         "prediction_random.png",
-        cvimage(model(lr.to(device).unsqueeze(0)).squeeze(0).cpu().detach().numpy()),
+        cvimage(
+            generator_model(lr.to(device).unsqueeze(0))
+            .squeeze(0)
+            .cpu()
+            .detach()
+            .numpy(),
+        ),
     )
 
     train_loader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
@@ -184,9 +209,9 @@ def run(config: ConfigBox, live: dvclive.Live):
 
     match config.train.optimizer:
         case "adam":
-            optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+            optimizer = torch.optim.Adam(generator_model.parameters(), lr=1e-3)
         case "rmsprop":
-            optimizer = torch.optim.RMSprop(model.parameters(), lr=1e-3)
+            optimizer = torch.optim.RMSprop(generator_model.parameters(), lr=1e-3)
 
     match config.train.loss:
         case "mse":
@@ -194,11 +219,18 @@ def run(config: ConfigBox, live: dvclive.Live):
         case "resnet18":
             criterion = resnet18_content_loss
 
-    trainer = create_supervised_trainer(
-        model,
-        optimizer,
-        criterion,
-        device,
+    # trainer = create_supervised_trainer(
+    #     model,
+    #     optimizer,
+    #     criterion,
+    #     device,
+    #     gradient_accumulation_steps=config.train.gradient_accumulation_steps,
+    # )
+    trainer = create_gan_trainer(
+        generator=generator_model,
+        discriminator=discriminator_model,
+        optimizer_class=torch.optim.Adam,
+        device=device,
         gradient_accumulation_steps=config.train.gradient_accumulation_steps,
     )
 
@@ -207,7 +239,7 @@ def run(config: ConfigBox, live: dvclive.Live):
     }
 
     val_evaluator = create_supervised_evaluator(
-        model,
+        generator_model,
         metrics=val_metrics,
         device=device,
     )
@@ -218,22 +250,27 @@ def run(config: ConfigBox, live: dvclive.Live):
     def tb_log_dynamics(engine):
         tb_logger.add_scalar(
             "weight_snr",
-            weight_snr(model),
+            weight_snr(generator_model),
             engine.state.iteration,
         )
         tb_logger.add_scalar(
             "grad_norm_sparsity",
-            grad_norm_sparsity(model),
+            grad_norm_sparsity(generator_model),
             engine.state.iteration,
         )
         tb_logger.add_scalar(
             "fisher_trace_estimate",
-            fisher_trace_estimate(model),
+            fisher_trace_estimate(generator_model),
             engine.state.iteration,
         )
         tb_logger.add_scalar(
-            "grad_L2",
-            grad_L2(model),
+            "generator_grad_L2",
+            grad_L2(generator_model),
+            engine.state.iteration,
+        )
+        tb_logger.add_scalar(
+            "generator_weights_L2",
+            weights_L2(generator_model),
             engine.state.iteration,
         )
 
@@ -245,7 +282,9 @@ def run(config: ConfigBox, live: dvclive.Live):
         Events.ITERATION_COMPLETED(every=config.train.gradient_accumulation_steps),
     )
     def dvclive_log_loss(engine):
-        live.log_metric("train_loss", engine.state.output)
+        print(engine.state.output)
+        for k, v in engine.state.output.items():
+            live.log_metric(k, v)
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):
@@ -282,7 +321,7 @@ def run(config: ConfigBox, live: dvclive.Live):
     val_evaluator.add_event_handler(
         Events.COMPLETED,
         model_checkpoint,
-        {"model": model},
+        {"model": generator_model},
     )
 
     # Define a Tensorboard logger
@@ -312,7 +351,7 @@ def run(config: ConfigBox, live: dvclive.Live):
     ProgressBar().attach(val_evaluator)
 
     trainer.run(train_loader, max_epochs=5)
-    torch.save(model.state_dict(), "models/best.pt")
+    torch.save(generator_model.state_dict(), "models/best.pt")
 
     # after training, rename the best checkpoint to models/best.pt
     # best_path = model_checkpoint.last_checkpoint  # full path to the chosen best file

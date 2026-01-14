@@ -18,6 +18,7 @@ DVC example: https://github.com/treeverse/example-get-started/blob/main/src/eval
 Metrics: https://acta.imeko.org/index.php/acta-imeko/article/download/1679/2939
 U-Net impl: https://github.com/milesial/Pytorch-UNet/
 CARN impl: https://github.com/nmhkahn/CARN-pytorch/
+GAN: https://pytorch-ignite.ai/blog/gan-evaluation-with-fid-and-is/
 
 UNet_first_run time: ~50min
 
