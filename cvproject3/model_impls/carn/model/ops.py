@@ -110,6 +110,22 @@ class UpsampleBlock(nn.Module):
             return self.up(x)
 
 
+def ICNR(tensor, initializer, upscale_factor=2, *args, **kwargs):
+    "tensor: the 2-dimensional Tensor or more"
+    upscale_factor_squared = upscale_factor * upscale_factor
+    assert tensor.shape[0] % upscale_factor_squared == 0, (
+        "The size of the first dimension: "
+        f"tensor.shape[0] = {tensor.shape[0]}"
+        " is not divisible by square of upscale_factor: "
+        f"upscale_factor = {upscale_factor}"
+    )
+    sub_kernel = torch.empty(
+        tensor.shape[0] // upscale_factor_squared, *tensor.shape[1:]
+    )
+    sub_kernel = initializer(sub_kernel, *args, **kwargs)
+    return sub_kernel.repeat_interleave(upscale_factor_squared, dim=0)
+
+
 class _UpsampleBlock(nn.Module):
     def __init__(self, n_channels, scale, group=1):
         super(_UpsampleBlock, self).__init__()
@@ -117,8 +133,17 @@ class _UpsampleBlock(nn.Module):
         modules = []
         if scale == 2 or scale == 4 or scale == 8:
             for _ in range(int(math.log(scale, 2))):
+                conv = nn.Conv2d(n_channels, 4 * n_channels, 3, 1, 1, groups=group)
+                weight = ICNR(
+                    conv.weight,
+                    initializer=nn.init.normal_,
+                    upscale_factor=2,
+                    mean=0.0,
+                    std=0.02,
+                )
+                conv.weight.data.copy_(weight)
                 modules += [
-                    nn.Conv2d(n_channels, 4 * n_channels, 3, 1, 1, groups=group),
+                    conv,
                     nn.LeakyReLU(inplace=True),
                 ]
                 modules += [nn.PixelShuffle(2)]

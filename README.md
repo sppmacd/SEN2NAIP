@@ -10,17 +10,15 @@ and train a model to upscale them back.
 References:
 
 - [1] https://www.nature.com/articles/s41597-024-04214-y
-
-https://medium.com/@mickael.boillaud/streamline-your-ml-pipeline-a-comprehensive-guide-to-dvc-data-version-control-97251730b1cf
-DVC docs
-PyTorch-Ignite docs
-DVC example: https://github.com/treeverse/example-get-started/blob/main/src/evaluate.py
-Metrics: https://acta.imeko.org/index.php/acta-imeko/article/download/1679/2939
-U-Net impl: https://github.com/milesial/Pytorch-UNet/
-CARN impl: https://github.com/nmhkahn/CARN-pytorch/
-GAN: https://pytorch-ignite.ai/blog/gan-evaluation-with-fid-and-is/
-Checkerboard artifacts: https://distill.pub/2016/deconv-checkerboard/
-VGG16 Content loss: https://gist.github.com/alper111/8233cdb0414b4cb5853f2f730ab95a49
+- https://medium.com/@mickael.boillaud/streamline-your-ml-pipeline-a-comprehensive-guide-to-dvc-data-version-control-97251730b1cf
+- DVC example: https://github.com/treeverse/example-get-started/blob/main/src/evaluate.py
+- Metrics: https://acta.imeko.org/index.php/acta-imeko/article/download/1679/2939
+- U-Net impl: https://github.com/milesial/Pytorch-UNet/
+- CARN impl: https://github.com/nmhkahn/CARN-pytorch/
+- GAN: https://pytorch-ignite.ai/blog/gan-evaluation-with-fid-and-is/
+- Checkerboard artifacts: https://distill.pub/2016/deconv-checkerboard/
+- VGG16 Content loss: https://gist.github.com/alper111/8233cdb0414b4cb5853f2f730ab95a49
+- ICNR (checkerboard-free pixelshuffle initialization): https://gist.github.com/A03ki/2305398458cb8e2155e8e81333f0a965
 
 UNet_first_run time: ~50min
 
