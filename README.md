@@ -19,6 +19,8 @@ Metrics: https://acta.imeko.org/index.php/acta-imeko/article/download/1679/2939
 U-Net impl: https://github.com/milesial/Pytorch-UNet/
 CARN impl: https://github.com/nmhkahn/CARN-pytorch/
 GAN: https://pytorch-ignite.ai/blog/gan-evaluation-with-fid-and-is/
+Checkerboard artifacts: https://distill.pub/2016/deconv-checkerboard/
+VGG16 Content loss: https://gist.github.com/alper111/8233cdb0414b4cb5853f2f730ab95a49
 
 UNet_first_run time: ~50min
 

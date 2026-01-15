@@ -1,7 +1,8 @@
 import torch
 
-from .model_impls.unet import UNet
+from .model_impls.carn.model.carn import Net as CARN
 from .model_impls.carn.model.carn_m import Net as CARN_m
+from .model_impls.unet import UNet
 
 # All models take (B, C, W, H) downscaled image
 # and return (B, C, W*2, H*2) upscaled image
@@ -41,7 +42,7 @@ class UNetModel(torch.nn.Module):
 class CARNModel(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.carn = CARN_m(scale=2)
+        self.carn = CARN(scale=2)
 
     def forward(self, x):
         return self.carn(x, 2)

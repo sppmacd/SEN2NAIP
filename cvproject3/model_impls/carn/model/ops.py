@@ -17,11 +17,10 @@ class MeanShift(nn.Module):
         r = mean_rgb[0] * sign
         g = mean_rgb[1] * sign
         b = mean_rgb[2] * sign
-        nir = mean_rgb[3] * sign
 
         self.shifter = nn.Conv2d(4, 3, 1, 1, 0)
-        self.shifter.weight.data = torch.eye(4).view(4, 4, 1, 1)
-        self.shifter.bias.data = torch.Tensor([r, g, b, nir])
+        self.shifter.weight.data = torch.eye(3).view(3, 3, 1, 1)
+        self.shifter.bias.data = torch.Tensor([r, g, b])
 
         # Freeze the mean shift layer
         for params in self.shifter.parameters():

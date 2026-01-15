@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import model.ops as ops
+from . import ops
 
 
 class Block(nn.Module):
@@ -40,8 +40,8 @@ class Net(nn.Module):
         multi_scale = kwargs.get("multi_scale")
         group = kwargs.get("group", 1)
 
-        self.sub_mean = ops.MeanShift((0.4488, 0.4371, 0.4040), sub=True)
-        self.add_mean = ops.MeanShift((0.4488, 0.4371, 0.4040), sub=False)
+        self.sub_mean = ops.MeanShift((0.0, 0.0, 0.0), sub=True)
+        self.add_mean = ops.MeanShift((0.0, 0.0, 0.0), sub=False)
 
         self.entry = nn.Conv2d(3, 64, 3, 1, 1)
 
@@ -61,22 +61,29 @@ class Net(nn.Module):
         x = self.sub_mean(x)
         x = self.entry(x)
         c0 = o0 = x
+        # print(f"{o0.min()=} {o0.max()=}")
 
         b1 = self.b1(o0)
         c1 = torch.cat([c0, b1], dim=1)
         o1 = self.c1(c1)
+        # print(f"{o1.min()=} {o1.max()=}")
 
         b2 = self.b2(o1)
         c2 = torch.cat([c1, b2], dim=1)
         o2 = self.c2(c2)
+        # print(f"{o2.min()=} {o2.max()=}")
 
         b3 = self.b3(o2)
         c3 = torch.cat([c2, b3], dim=1)
         o3 = self.c3(c3)
+        # print(f"{o3.min()=} {o3.max()=}")
 
         out = self.upsample(o3, scale=scale)
+        # print(f"upsample {out.min()=} {out.max()=}")
 
         out = self.exit(out)
+        # print(f"exit {out.min()=} {out.max()=}")
+
         out = self.add_mean(out)
 
         return out

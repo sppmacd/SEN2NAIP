@@ -1,5 +1,7 @@
 train:
-  batch_size: 2
+  mode: "overfitting"
+  batch_size: 1
   gradient_accumulation_steps: 1
   optimizer: "adam"
-  loss: "mse"
+  loss: "vgg16"
+  max_epochs: 500

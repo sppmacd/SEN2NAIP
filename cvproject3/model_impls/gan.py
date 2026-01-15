@@ -6,6 +6,8 @@ from torch import nn
 from torch.profiler import ProfilerActivity, profile, record_function
 from torchvision import models
 
+from .dynamics import grad_L2, weights_L2
+
 
 class ResNet18Discriminator(nn.Module):
     def __init__(self):
@@ -17,7 +19,7 @@ class ResNet18Discriminator(nn.Module):
         self.backbone = nn.Sequential(
             resnet.conv1,
             resnet.bn1,
-            resnet.relu,
+            nn.LeakyReLU(inplace=True),
             resnet.maxpool,
             resnet.layer1,
             resnet.layer2,
@@ -25,16 +27,14 @@ class ResNet18Discriminator(nn.Module):
             resnet.layer4,
             resnet.avgpool,
         )
-        self.backbone.requires_grad_(False)
 
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Linear(512, 256),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(256, 1),
-            nn.Sigmoid(),
         )
-        self._init_weights()
+        # self._init_weights()
 
     def input_conv_params(self):
         return self.input_conv.parameters()
@@ -59,12 +59,15 @@ class ResNet18Discriminator(nn.Module):
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
 
-    def forward(self, x_hr):
+    def forward(self, x_lr, x_hr):
+        # x_lr: (B,4,H//2, W//2) low-resolution image (generator/upscaler input)
         # x_hr: (B,4,H,W) high-resolution image (real or SR output)
-        x = self.input_conv(x_hr)  # (B,3,H,W)
+        x_lr_up = nn.Upsample(scale_factor=2, mode="bicubic")(x_lr)
+        # Discriminator learns on the difference between bicubic scaling and generator output.
+        x = self.input_conv(x_hr - x_lr_up)  # (B,3,H,W)
         feat = self.backbone(x)  # (B,512,1,1)
-        probs = self.classifier(feat)  # (B,1)
-        return probs.squeeze(1)
+        logits = self.classifier(feat)  # (B,1)
+        return logits.squeeze(1)
 
 
 def print_local_tensor_info(local_vars):
@@ -109,13 +112,8 @@ def create_gan_trainer(
     device,
     gradient_accumulation_steps: int,
 ):
-    opt_generator = optimizer_class(generator.parameters(), lr=5e-3)
-    opt_discriminator = optimizer_class(discriminator.parameters(), lr=5e-4)
-
-    criterion = nn.BCELoss()
-
-    labels_real = torch.ones(32, device=device)
-    labels_fake = torch.zeros(32, device=device)
+    opt_generator = optimizer_class(generator.parameters(), lr=8e-4)
+    opt_discriminator = optimizer_class(discriminator.parameters(), lr=1e-3)
 
     def training_step(engine, data):
         # https://pytorch-ignite.ai/blog/gan-evaluation-with-fid-and-is/
@@ -123,64 +121,101 @@ def create_gan_trainer(
         discriminator.train()
 
         lr, hr = data
+        real_lr = lr.to(device)
+        real = hr.to(device)
 
         it = engine.state.iteration
 
-        b_size = hr.size(0)
+        if (
+            it // (8 * gradient_accumulation_steps) % 4 != 3
+        ):  # 0,1,2 - train discriminator, 3 - train generator
+            generator.requires_grad_(False)
 
-        if it // 50 % 2 == 0:
-            # Train Discriminator (real)
-            discriminator.zero_grad()
-            real = hr.to(device)
-            label = labels_real[:b_size]
-            output1 = discriminator(real).view(-1)
-            err_d_real = criterion(output1, label)
-            err_d_real.backward()
+            if it % gradient_accumulation_steps == 0:
+                discriminator.zero_grad()
 
-            gc.collect()
-
-            # Train Discriminator (fake)
+            output_real = discriminator(real_lr, real).view(-1)
             fake = generator(lr.to(device))
-            label = labels_fake[:b_size]
-            output2 = discriminator(fake.detach()).view(-1)
-            err_d_fake = criterion(output2, label)
-            err_d_fake.backward()
+            output_fake = discriminator(real_lr, fake.detach()).view(-1)
 
-            gc.collect()
+            torch.cuda.empty_cache()
 
-            err_d = err_d_real + err_d_fake
+            # Earth mover's distance (Maximize)
+            err_d = (output_fake - output_real).mean()
+            err_d.backward()
+
+            nn.utils.clip_grad_norm_(discriminator.parameters(), max_norm=1.0)
             opt_discriminator.step()
 
-            gc.collect()
+            # Clip weights
+            for p in discriminator.parameters():
+                p.data.clamp_(-0.01, 0.01)
+
+            torch.cuda.empty_cache()
 
             return {
-                "Loss_D": err_d.item(),
-                "D_x": output1.mean().item(),
-                "D_G_z1": output2.mean().item(),
+                "EMD": -err_d.item(),
+                "D_x": output_real.mean().item(),
+                "D_G_z1": output_fake.mean().item(),
+                "discr_grad_L2": grad_L2(discriminator).item(),
+                "discr_weights_L2": weights_L2(discriminator).item(),
             }
         else:
             # Train Generator
-            generator.zero_grad()
-            label = labels_real[:b_size]
-            output3 = discriminator(generator(lr.to(device)))
-            err_g = criterion(output3, label)
+            generator.requires_grad_(True)
+
+            if it % gradient_accumulation_steps == 0:
+                generator.zero_grad()
+
+            output_real = discriminator(real_lr, real).view(-1)
+
+            fake = generator(lr.to(device))
+            output_fake = discriminator(real_lr, fake).view(-1)
+
+            torch.cuda.empty_cache()
+
+            # Earth mover's distance (Minimize)
+            err_g_emd = (output_real - output_fake).mean()
+            output_fake_mean = output_fake.mean().item()
+            del output_fake
+            output_real_mean = output_real.mean().item()
+            del output_real
+
+            torch.cuda.empty_cache()
+
+            # Penalty for fake outputs being out of -1..1
+            err_norm = fake.mean() ** 4
+
+            err_g = err_g_emd + err_norm
             err_g.backward()
+
+            nn.utils.clip_grad_norm_(generator.parameters(), max_norm=1.0)
             opt_generator.step()
+
+            # Clip weights
+            for p in generator.parameters():
+                p.data.clamp_(-0.1, 0.1)
 
             gc.collect()
 
             return {
-                "Loss_G": err_g.item(),
-                "D_G_z2": output3.mean().item(),
+                "EMD_pure": err_g_emd.item(),
+                "err_norm": err_norm.item(),
+                "EMD": err_g.item(),
+                "D_x": output_real_mean,
+                "D_G_z2": output_fake_mean,
+                "MSE": nn.MSELoss()(fake, real).item(),
+                "gen_grad_L2": grad_L2(generator).item(),
+                "gen_weights_L2": weights_L2(generator).item(),
+                "gen_weights_L2_exit_": weights_L2(generator.carn.exit).item(),
             }
 
     def training_step_profile(engine, data):
-        with profile(
-            activities=[ProfilerActivity.CUDA], profile_memory=True, record_shapes=True
-        ) as prof:
+        try:
             t = training_step(engine, data)
-
-        print(prof.key_averages().table(sort_by="self_cpu_memory_usage", row_limit=10))
+        except torch.OutOfMemoryError:
+            torch.cuda.memory._dump_snapshot("my_snapshot.pickle")
+            raise
         return t
 
-    return Engine(training_step)
+    return Engine(training_step_profile)
