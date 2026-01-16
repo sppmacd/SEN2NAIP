@@ -26,44 +26,44 @@ Table
 
 ## Points table
 
-| task                                                                                           | points | done |
-| ---------------------------------------------------------------------------------------------- | ------ | ---- |
-| Problem (Super-resolution)                                                                     | 3      | YES  |
-| **TOTAL POINTS** (Problem)                                                                     | 3      |      |
-| -                                                                                              | -      | -    |
-| Model (Ready: U-Net)                                                                           | 1      | YES  |
-| Model (Ready: CARN)                                                                            | 1      | ~~   |
-| Model: GAN                                                                                     | 1      | NO   |
-| **TOTAL POINTS** (Model)                                                                       | 1      |      |
-| -                                                                                              | -      | -    |
-| Training: Training dynamics metrics (Loss + at least 3)                                        | REQ    | NO   |
-| Training: Hyperparameter estimation                                                            | 1      | NO   |
-| Training: Adaptive hyperparameters                                                             | 1      | NO   |
-| Training: Architecture tuning (at least 3 architecture)                                        | 1      | NO   |
-| Training: Overfitting some examples from the training set                                      | 1      | NO   |
-| Training: Data augmentation                                                                    | 1      | NO   |
-| Training: Cross-validation                                                                     | 1      | NO   |
-| Training: Distributed learning                                                                 | 1      | NO   |
-| Training: Federated learning                                                                   | 2      | NO   |
-| Training: Testing various loss functions (at least 3)                                          | 1      | NO   |
-| Training: Calculating intrinsic dimension                                                      | 1      | NO   |
-| Training: Custom optimizer                                                                     | 1      | NO   |
-| **TOTAL POINTS** (Training)                                                                    | 0      |      |
-| -                                                                                              | -      | -    |
-| Tools: Git with Readme                                                                         | REQ    | YES  |
-| Tools: MLflow,Tensorboard, Neptune, Weights & Biases (along with some analysis of experiments) | 1      | YES  |
-| Tools: Run as docker/ docker compose                                                           | 1      | NO   |
-| Tools: REST API or GUI for example Gradio, Streamlit                                           | 1      | NO   |
-| Tools: DVC                                                                                     | 2      | YES  |
-| Tools: Every other MLOps tool                                                                  | 1      | NO   |
-| Tools: Label Studio or other data labeling tools                                               | 1      | NO   |
-| Tools: Explanation of 3 predictions - e.g. which inputs were most significant                  | 2      | NO   |
-| **TOTAL POINTS** (Tools)                                                                       | 3      |      |
-| -                                                                                              | -      | -    |
-| **TOTAL POINTS** (Problem)                                                                     | 3      |      |
-| **TOTAL POINTS** (Model)                                                                       | 1      |      |
-| **TOTAL POINTS** (Dataset+Training+Tools+Report)                                               | 3      |      |
-| **TOTAL POINTS**                                                                               | 7      |      |
+| task                                                                                           | points | done     |
+| ---------------------------------------------------------------------------------------------- | ------ | -------- |
+| Problem (Super-resolution)                                                                     | 3      | YES      |
+| **TOTAL POINTS** (Problem)                                                                     | 3      |          |
+| -                                                                                              | -      | -        |
+| Model (Ready: U-Net)                                                                           | 1      | YES      |
+| Model (Ready: CARN)                                                                            | 1      | YES      |
+| Model: GAN                                                                                     | 1      | NO       |
+| **TOTAL POINTS** (Model)                                                                       | 2      |          |
+| -                                                                                              | -      | -        |
+| Training: Training dynamics metrics (Loss + at least 3)                                        | REQ    | YES      |
+| Training: Hyperparameter estimation                                                            | 1      | NO       |
+| Training: Adaptive hyperparameters                                                             | 1      | NO       |
+| Training: Architecture tuning (at least 3 architecture)                                        | 1      | NO       |
+| Training: Overfitting some examples from the training set                                      | 1      | YES      |
+| Training: Data augmentation                                                                    | 1      | NO       |
+| Training: Cross-validation                                                                     | 1      | NO       |
+| Training: Distributed learning                                                                 | 1      | NO       |
+| Training: Federated learning                                                                   | 2      | NO       |
+| Training: Testing various loss functions (at least 3)                                          | 1      | NO (2/3) |
+| Training: Calculating intrinsic dimension                                                      | 1      | NO       |
+| Training: Custom optimizer                                                                     | 1      | NO       |
+| **TOTAL POINTS** (Training)                                                                    | 1      |          |
+| -                                                                                              | -      | -        |
+| Tools: Git with Readme                                                                         | REQ    | YES      |
+| Tools: MLflow,Tensorboard, Neptune, Weights & Biases (along with some analysis of experiments) | 1      | YES      |
+| Tools: Run as docker/ docker compose                                                           | 1      | NO       |
+| Tools: REST API or GUI for example Gradio, Streamlit                                           | 1      | NO       |
+| Tools: DVC                                                                                     | 2      | YES      |
+| Tools: Every other MLOps tool                                                                  | 1      | NO       |
+| Tools: Label Studio or other data labeling tools                                               | 1      | NO       |
+| Tools: Explanation of 3 predictions - e.g. which inputs were most significant                  | 2      | NO       |
+| **TOTAL POINTS** (Tools)                                                                       | 3      |          |
+| -                                                                                              | -      | -        |
+| **TOTAL POINTS** (Problem)                                                                     | 3      |          |
+| **TOTAL POINTS** (Model)                                                                       | 2      |          |
+| **TOTAL POINTS** (Dataset+Training+Tools+Report)                                               | 4      |          |
+| **TOTAL POINTS**                                                                               | 9      |          |
 
 ## Report TODO
 

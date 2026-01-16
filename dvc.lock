@@ -22,7 +22,7 @@ stages:
     deps:
     - path: cvproject3/model_impls
       hash: md5
-      md5: 69817ae25b0b8d741ce140812ec4a57f.dir
+      md5: be517872de8a2071b5332a2c3ca373df.dir
       size: 83038
       nfiles: 20
     - path: cvproject3/models.py
@@ -40,21 +40,21 @@ stages:
       nfiles: 5702
     params:
       params.yaml:
-        train.batch_size: 1
+        train.batch_size: 2
     outs:
     - path: models/best.pt
       hash: md5
-      md5: 391bc0babc2bc3341f0691f78c5f239c
+      md5: daf57f0ec2f35a1e63301704d56139c5
       size: 3967054
   eval:
     cmd: python -m cvproject3.eval
     deps:
     - path: cvproject3
       hash: md5
-      md5: f04e755b10e7519d87c060ef55044c09.dir
+      md5: 6031d2d3aaa5634f30f8494d0e58cf32.dir
       size: 134701
       nfiles: 36
     - path: models/best.pt
       hash: md5
-      md5: 391bc0babc2bc3341f0691f78c5f239c
+      md5: daf57f0ec2f35a1e63301704d56139c5
       size: 3967054
