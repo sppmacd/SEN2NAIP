@@ -19,14 +19,19 @@ def _write_dir(images, dir_: str):
 
     for img_roi in tqdm(images, desc=f"Writing {dir_}/"):
         img = np.clip(load_image(img_roi) * 255, 0, 255).astype(np.uint8)
-        img_downscaled = cv2.resize(
+        img_hr = cv2.resize(
             img,
             (img.shape[1] // 2, img.shape[0] // 2),
             interpolation=cv2.INTER_AREA,
         )
+        img_lr = cv2.resize(
+            img,
+            (img.shape[1] // 4, img.shape[0] // 4),
+            interpolation=cv2.INTER_AREA,
+        )
 
-        np.savez(Path("data") / dir_ / f"{img_roi}.hr.npz", img)
-        np.savez(Path("data") / dir_ / f"{img_roi}.lr.npz", img_downscaled)
+        np.savez(Path("data") / dir_ / f"{img_roi}.hr.npz", img_hr)
+        np.savez(Path("data") / dir_ / f"{img_roi}.lr.npz", img_lr)
 
 
 def generate_dataset():
