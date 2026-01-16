@@ -23,6 +23,7 @@ from torchvision.transforms import Compose, ToTensor
 
 import dvclive
 
+from .model_impls import dynamics
 from .model_impls.content_loss import VGGPerceptualLoss
 from .model_impls.gan import ResNet18Discriminator, create_gan_trainer
 from .models import Model
@@ -142,20 +143,24 @@ def run(config: ConfigBox, live: dvclive.Live):
         device=device,
     )
 
-    log_interval = 10
+    tb_logger = TensorboardLogger()
 
     @trainer.on(Events.ITERATION_COMPLETED)
     def dvclive_log_step(engine):
         live.next_step()
 
     @trainer.on(
-        Events.ITERATION_COMPLETED(every=config.train.gradient_accumulation_steps),
+        Events.ITERATION_COMPLETED(every=config.train.gradient_accumulation_steps * 4),
     )
-    def dvclive_log_loss(engine):
-        live.log_metric("train_loss", engine.state.output)
-        # print(engine.state.output)
-        # for k, v in engine.state.output.items():
-        #     live.log_metric(k, v)
+    def log_dynamics(engine):
+        metric = dynamics.grad_L2(generator_model)
+        tb_logger.add_scalar("d_grad_L2", metric, engine.state.iteration)
+
+        metric = dynamics.weights_L2(generator_model)
+        tb_logger.add_scalar("d_weights_L2", metric, engine.state.iteration)
+
+        metric = dynamics.grad_norm_sparsity(generator_model)
+        tb_logger.add_scalar("d_grad_norm_sparsity", metric, engine.state.iteration)
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):
@@ -168,7 +173,7 @@ def run(config: ConfigBox, live: dvclive.Live):
             )
             live.log_metric("val_loss", metrics["loss"])
 
-    @trainer.on(Events.EPOCH_COMPLETED(every=20))
+    @trainer.on(Events.ITERATION_COMPLETED(every=20 if overfitting else 100))
     def log_images(trainer):
         live.log_image(
             f"e{trainer.state.epoch}_state.png",
@@ -210,18 +215,15 @@ def run(config: ConfigBox, live: dvclive.Live):
         {"model": generator_model},
     )
 
-    # Define a Tensorboard logger
-    tb_logger = TensorboardLogger()
-
-    # Attach handler to plot trainer's loss every 100 iterations
     tb_logger.attach_output_handler(
         trainer,
-        event_name=Events.ITERATION_COMPLETED(every=log_interval),
+        event_name=Events.ITERATION_COMPLETED(
+            every=config.train.gradient_accumulation_steps,
+        ),
         tag="training",
         output_transform=lambda loss: {"batch_loss": loss},
     )
 
-    # Attach handler for plotting both evaluators' metrics after every epoch completes
     for tag, evaluator in [
         ("validation", val_evaluator),
     ]:

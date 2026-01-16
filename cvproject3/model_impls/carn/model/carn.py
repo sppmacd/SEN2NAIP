@@ -55,7 +55,13 @@ class Net(nn.Module):
         self.upsample = ops.UpsampleBlock(
             64, scale=scale, multi_scale=multi_scale, group=group
         )
-        self.exit = nn.Conv2d(64, 3, 3, 1, 1)
+        self.exit = nn.Sequential(
+            nn.Conv2d(64, 32, 3, 1, 1),
+            nn.LeakyReLU(inplace=True),
+            nn.Conv2d(32, 16, 3, 1, 1),
+            nn.LeakyReLU(inplace=True),
+            nn.Conv2d(16, 3, 3, 1, 1),
+        )
 
     def forward(self, x, scale):
         x = self.sub_mean(x)

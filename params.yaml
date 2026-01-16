@@ -5,3 +5,4 @@ train:
   optimizer: "adam"
   loss: "vgg16"
   max_epochs: 500
+  tb_log_dir: "test"
