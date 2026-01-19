@@ -1,8 +1,8 @@
 train:
-  mode: "overfitting"
+  mode: ""
   batch_size: 2
   gradient_accumulation_steps: 8
   optimizer: "adam"
   loss: "vgg16"
-  max_epochs: 1000
+  max_epochs: 20
   tb_log_dir: "test_full"
