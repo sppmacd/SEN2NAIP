@@ -68,6 +68,13 @@ def cvimage(img):
 def run(config: ConfigBox, live: dvclive.Live):
     print(config)
 
+    overfitting = config.train.mode == "overfitting"
+
+    if overfitting:
+        config.train.batch_size = 1
+        config.train.gradient_accumulation_steps = 1
+        config.train.max_epochs = 1000
+
     torch.autograd.set_detect_anomaly(True)
     torch.cuda.memory._record_memory_history()
 
@@ -77,8 +84,6 @@ def run(config: ConfigBox, live: dvclive.Live):
     # discriminator_model = ResNet18Discriminator().to(device)
 
     batch_size = config.train.batch_size
-
-    overfitting = config.train.mode == "overfitting"
 
     train_dataset = Dataset("data/train", overfitting=overfitting)
 

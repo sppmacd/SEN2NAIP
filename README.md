@@ -4,8 +4,8 @@ Super Resolution of SEN2NAIP dataset (https://huggingface.co/datasets/isp-uv-es/
 The dataset consists of 2851 remote sensing imagery data, low and high resolution, in GeoTIFF
 format, each of size 484x484 and 4 channels (RGBNIR - Red, Green, Blue, Near Infrared)
 
-I'm going to take only the high-resolution (HR) images, scale them down 2x (to 242x242)
-and train a model to upscale them back.
+I'm going to take only the high-resolution (HR) images (242x242), scale them down 2 times
+(to 121x121) and train a model to upscale them back.
 
 References:
 
@@ -22,7 +22,49 @@ References:
 
 UNet_first_run time: ~50min
 
-Table
+## Methods
+
+### Dataset
+
+- https://huggingface.co/datasets/isp-uv-es/SEN2NAIP
+- 2851 images
+- RGBNIR images; we take only RGB channels to adapt for pre-trained models
+- High-resolution and low-resolution images, HR originally 484x484 scaled down to 242x242 because of computational constraints; low-resolution images are 121x121.
+
+### Models
+
+- Bicubic scaling (baseline)
+- UNet
+- CARN (both "small" and "normal" version tested)
+
+### Loss
+
+- Pixel MSE
+- VGG16 content loss
+
+### Training
+
+- Adam/RMSprop optimizer
+
+### Tools
+
+- PyTorch via Ignite framework
+- TensorBoard for training metrics
+- DVC for experiment tracking
+
+## Results
+
+### Sample overfitting
+
+One of the samples was overfitted to check if the model is able to reproduce the image at all.
+
+TODO: Numbers
+
+### Models
+
+All of trained models below bicubic in terms of metrics
+
+TODO: Numbers
 
 ## Points table
 

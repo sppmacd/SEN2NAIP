@@ -133,20 +133,14 @@ class _UpsampleBlock(nn.Module):
         modules = []
         if scale == 2 or scale == 4 or scale == 8:
             for _ in range(int(math.log(scale, 2))):
-                conv = nn.Conv2d(n_channels, 4 * n_channels, 3, 1, 1, groups=group)
-                weight = ICNR(
-                    conv.weight,
-                    initializer=nn.init.normal_,
-                    upscale_factor=2,
-                    mean=0.0,
-                    std=0.02,
-                )
-                conv.weight.data.copy_(weight)
+                # https://www.cambridge.org/core/services/aop-cambridge-core/content/view/9F3A72B4581D101881B4A08C09150914/S2048770319000027a.pdf/checkerboard-artifacts-free-convolutional-neural-networks.pdf
+
+                # Deviate a bit from the paper: instead of pixelshuffle,
+                # just use nearest neighbor upsampling + activation.
                 modules += [
-                    conv,
+                    nn.Upsample(scale_factor=2, mode="nearest"),  # still 64 channels
                     nn.LeakyReLU(inplace=True),
                 ]
-                modules += [nn.PixelShuffle(2)]
         elif scale == 3:
             modules += [
                 nn.Conv2d(n_channels, 9 * n_channels, 3, 1, 1, groups=group),
