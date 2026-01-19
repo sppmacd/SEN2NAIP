@@ -43,7 +43,7 @@ class Net(nn.Module):
         self.sub_mean = ops.MeanShift((0.0, 0.0, 0.0), sub=True)
         self.add_mean = ops.MeanShift((0.0, 0.0, 0.0), sub=False)
 
-        self.entry = nn.Conv2d(3, 64, 3, 1, 1)
+        self.entry = nn.Conv2d(3, 64, 3, 1, 1, padding_mode="reflect")
 
         self.b1 = Block(64, 64)
         self.b2 = Block(64, 64)
@@ -56,11 +56,11 @@ class Net(nn.Module):
             64, scale=scale, multi_scale=multi_scale, group=group
         )
         self.exit = nn.Sequential(
-            nn.Conv2d(64, 32, 3, 1, 1),
+            nn.Conv2d(64, 32, 3, 1, 1, padding_mode="reflect"),
             nn.LeakyReLU(inplace=True),
-            nn.Conv2d(32, 16, 3, 1, 1),
+            nn.Conv2d(32, 16, 3, 1, 1, padding_mode="reflect"),
             nn.LeakyReLU(inplace=True),
-            nn.Conv2d(16, 3, 3, 1, 1),
+            nn.Conv2d(16, 3, 3, 1, 1, padding_mode="reflect"),
         )
 
     def forward(self, x, scale):

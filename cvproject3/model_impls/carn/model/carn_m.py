@@ -121,7 +121,7 @@ class Net(nn.Module):
         self.upsample = ops.UpsampleBlock(
             64, scale=scale, multi_scale=multi_scale, group=group
         )
-        self.exit = nn.Conv2d(64, 4, 3, 1, 1)
+        self.exit = nn.Conv2d(64, 4, 3, 1, 1, padding_mode="reflect")
 
     def forward(self, x, scale):
         # chshow(x)

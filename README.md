@@ -66,6 +66,8 @@ All of trained models below bicubic in terms of metrics
 
 TODO: Numbers
 
+### Qualitative results
+
 ## Points table
 
 | task                                                                                           | points | done     |

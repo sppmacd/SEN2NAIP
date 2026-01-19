@@ -36,7 +36,9 @@ class BasicBlock(nn.Module):
         super(BasicBlock, self).__init__()
 
         self.body = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, ksize, stride, pad),
+            nn.Conv2d(
+                in_channels, out_channels, ksize, stride, pad, padding_mode="reflect"
+            ),
             nn.LeakyReLU(inplace=True),
         )
 
@@ -52,9 +54,9 @@ class ResidualBlock(nn.Module):
         super(ResidualBlock, self).__init__()
 
         self.body = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 3, 1, 1),
+            nn.Conv2d(in_channels, out_channels, 3, 1, 1, padding_mode="reflect"),
             nn.LeakyReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, 3, 1, 1),
+            nn.Conv2d(out_channels, out_channels, 3, 1, 1, padding_mode="reflect"),
         )
 
         init_weights(self.modules)
@@ -70,11 +72,21 @@ class EResidualBlock(nn.Module):
         super(EResidualBlock, self).__init__()
 
         self.body = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 3, 1, 1, groups=group),
+            nn.Conv2d(
+                in_channels, out_channels, 3, 1, 1, groups=group, padding_mode="reflect"
+            ),
             nn.LeakyReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, 3, 1, 1, groups=group),
+            nn.Conv2d(
+                out_channels,
+                out_channels,
+                3,
+                1,
+                1,
+                groups=group,
+                padding_mode="reflect",
+            ),
             nn.LeakyReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, 1, 1, 0),
+            nn.Conv2d(out_channels, out_channels, 1, 1, 0, padding_mode="reflect"),
         )
 
         init_weights(self.modules)
@@ -143,7 +155,15 @@ class _UpsampleBlock(nn.Module):
                 ]
         elif scale == 3:
             modules += [
-                nn.Conv2d(n_channels, 9 * n_channels, 3, 1, 1, groups=group),
+                nn.Conv2d(
+                    n_channels,
+                    9 * n_channels,
+                    3,
+                    1,
+                    1,
+                    groups=group,
+                    padding_mode="reflect",
+                ),
                 nn.LeakyReLU(inplace=True),
             ]
             modules += [nn.PixelShuffle(3)]
