@@ -3,6 +3,6 @@ train:
   batch_size: 2
   gradient_accumulation_steps: 8
   optimizer: "adam"
-  loss: "vgg16"
+  loss: "L1"
   max_epochs: 20
   tb_log_dir: "test_full"
