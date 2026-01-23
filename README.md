@@ -39,12 +39,16 @@ UNet_first_run time: ~50min
 
 ### Loss
 
-- Pixel MSE
+- Pixel-wise MSE
 - VGG16 content loss
 
 ### Training
 
 - Adam/RMSprop optimizer
+- For experiments:
+  - taking first 256 samples from dataset
+  - training stopped early (20 epochs for normal training / 500 or 1000 for overfitting)
+  - loss curves show that model has room for improvement
 
 ### Tools
 
@@ -67,6 +71,12 @@ All of trained models below bicubic in terms of metrics
 TODO: Numbers
 
 ### Qualitative results
+
+- Sharper than bicubic
+- Common features (e.g roads) are often well represented
+- Problems with representing color well
+- 2x2 blocks from nearest neighbor upscaling clearly visible in some cases
+- Some discolorings (high saturation artifacts)
 
 ## Points table
 

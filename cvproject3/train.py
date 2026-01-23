@@ -20,6 +20,7 @@ from ignite.metrics import Loss
 from torch import nn
 from torch.utils.data import DataLoader
 from torchvision.transforms import Compose, ToTensor
+import torchvision.transforms as T
 
 import dvclive
 
@@ -30,32 +31,57 @@ from .models import Model
 
 
 class Dataset(torch.utils.data.Dataset):
-    def __init__(self, path: str, *, overfitting: bool = False):
+    def __init__(self, path: str, *, overfitting: bool = False, augment: bool = True):
         if overfitting:
             self.hr_images = list(Path(path).glob("*.hr.npz"))[:1]
         else:
             self.hr_images = list(Path(path).glob("*.hr.npz"))[:256]
 
-    @staticmethod
-    def _transform():
-        return Compose([ToTensor()])
+        self.images = [self._load_img(i) for i in range(len(self.hr_images))]
+        self.augment = augment
+
+    def _transform(self):
+        if self.augment:
+            return Compose(
+                [
+                    ToTensor(),
+                    T.RandomRotation(degrees=10, fill=(0,)),
+                    T.RandomCrop(size=(242, 242)),
+                    T.ColorJitter(
+                        brightness=0.2,
+                        contrast=0.2,
+                        saturation=0.2,
+                        hue=0.1,
+                    ),
+                ]
+            )
+        else:
+            return Compose(
+                [
+                    ToTensor(),
+                ]
+            )
 
     def __len__(self):
         return len(self.hr_images)
 
     def __getitem__(self, idx: int):
+        hr_image = self.images[idx]
+
+        hr_image_aug = self._transform()(hr_image[:, :, :3])
+        lr_image_aug = nn.functional.interpolate(
+            hr_image_aug.unsqueeze(0), scale_factor=0.5, mode="bicubic"
+        ).squeeze(0)
+
+        return lr_image_aug, hr_image_aug
+
+    def _load_img(self, idx: int):
         hr_image_path = self.hr_images[idx]
-        lr_image_path = str(hr_image_path).replace("hr.npz", "lr.npz")
 
         hr_image_file = np.load(hr_image_path)
         hr_image = hr_image_file["arr_0"]
         hr_image_file.close()
-        lr_image_file = np.load(lr_image_path)
-        lr_image = lr_image_file["arr_0"]
-        lr_image_file.close()
-
-        t = self._transform()
-        return t(lr_image)[:3], t(hr_image)[:3]
+        return hr_image
 
 
 def cvimage(img):
@@ -103,7 +129,9 @@ def run(config: ConfigBox, live: dvclive.Live):
     )
 
     train_loader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
-    val_loader = DataLoader(Dataset("data/val"), shuffle=True, batch_size=batch_size)
+    val_loader = DataLoader(
+        Dataset("data/val", augment=False), shuffle=True, batch_size=batch_size
+    )
 
     match config.train.optimizer:
         case "adam":
@@ -120,6 +148,8 @@ def run(config: ConfigBox, live: dvclive.Live):
                 return nn.MSELoss()(y1, y2)
 
             criterion = nn.MSELoss()
+        case "L1":
+            criterion = nn.L1Loss()
         case "vgg16":
             criterion = VGGPerceptualLoss(resize=False).to(device)
 

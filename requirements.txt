@@ -1,0 +1,6 @@
+opencv-python
+rioxarray
+scikit-image
+torch
+torchvision
+tqdm

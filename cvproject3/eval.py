@@ -38,7 +38,11 @@ test_evaluator = create_supervised_evaluator(
 ProgressBar().attach(test_evaluator)
 
 overfitting = config.train.mode == "overfitting"
-dataset = Dataset("data/train" if overfitting else "data/test", overfitting=overfitting)
+dataset = Dataset(
+    "data/train" if overfitting else "data/test",
+    overfitting=overfitting,
+    augment=False,
+)
 test_loader = DataLoader(dataset, batch_size=4)
 
 test_evaluator.run(test_loader)
