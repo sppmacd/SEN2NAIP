@@ -35,7 +35,7 @@ class Dataset(torch.utils.data.Dataset):
         if overfitting:
             self.hr_images = list(Path(path).glob("*.hr.npz"))[:1]
         else:
-            self.hr_images = list(Path(path).glob("*.hr.npz"))[:256]
+            self.hr_images = list(Path(path).glob("*.hr.npz"))
 
         self.images = [self._load_img(i) for i in range(len(self.hr_images))]
         self.augment = augment
@@ -102,7 +102,7 @@ def run(config: ConfigBox, live: dvclive.Live):
         config.train.max_epochs = 1000
 
     torch.autograd.set_detect_anomaly(True)
-    torch.cuda.memory._record_memory_history()
+    # torch.cuda.memory._record_memory_history()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # device = torch.device("cpu")
@@ -207,6 +207,9 @@ def run(config: ConfigBox, live: dvclive.Live):
                 f"Validation Results - Epoch[{trainer.state.epoch}] Avg loss: {metrics['loss']:.5f}"
             )
             live.log_metric("val_loss", metrics["loss"])
+
+            # WRITE last.pt
+            torch.save(generator_model.state_dict(), "models/last.pt")
 
     @trainer.on(Events.ITERATION_COMPLETED(every=20 if overfitting else 100))
     def log_images(trainer):
