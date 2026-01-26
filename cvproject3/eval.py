@@ -45,7 +45,13 @@ dataset = Dataset(
 )
 test_loader = DataLoader(dataset, batch_size=4)
 
+import time
+
+start_time = time.time()
 test_evaluator.run(test_loader)
+print(
+    f"Evaluation time: {time.time() - start_time:.2f} seconds ({len(dataset)} images, {(time.time() - start_time) / len(dataset) * 1000:.2f} ms/img)"
+)
 
 metrics = test_evaluator.state.metrics
 

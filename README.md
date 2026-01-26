@@ -30,12 +30,26 @@ UNet_first_run time: ~50min
 - 2851 images
 - RGBNIR images; we take only RGB channels to adapt for pre-trained models
 - High-resolution and low-resolution images, HR originally 484x484 scaled down to 242x242 because of computational constraints; low-resolution images are 121x121.
+- Split randomly into
+  - train: 2053
+  - val: 229
+  - test: 572
 
 ### Models
 
-- Bicubic scaling (baseline)
-- UNet
-- CARN (both "small" and "normal" version tested)
+Used bicubic scaling as a baseline.
+
+#### UNet
+
+#### CARN
+
+Both "small" (`CARN_m`) and "normal" version was tested.
+
+The final model is `CARN` with some modifications:
+- `LeakyReLU` instead of `ReLU` everywhere
+- Reflect padding instead of zeros everywhere
+- More conv layers in the head
+- 
 
 ### Loss
 

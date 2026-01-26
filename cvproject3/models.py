@@ -10,7 +10,7 @@ from .model_impls.unet import UNet
 
 class BaselineModel(torch.nn.Module):
     def forward(self, x):
-        return torch.nn.Upsample(scale_factor=2, mode="nearest")(x)
+        return torch.nn.Upsample(scale_factor=2, mode="bicubic")(x)
 
 
 class SimpleModel(torch.nn.Module):
