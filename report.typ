@@ -141,14 +141,18 @@ One of the samples was overfitted to check if the model is able to reproduce the
     columns: (3cm, 2cm, 2cm),
     align: (left, right, right),
     [model], [test SSIM], [test PSNR],
-    [final], [0.87], [33.04],
+    [final], [0.92], [36.33],
   ),
-  caption: [Results of selected experiments.],
+  caption: [Comparison of overfitted sample to bicubic baseline],
 )
+
+#image("images/overfitting.png")
+
+The images and metrics show that the model generally is capable of representing the final image, although the generated image is slightly more blurred than the original.
 
 === Models
 
-Metrics: SSIM, PSNR
+Metrics: *SSIM*, *PSNR*
 
 All of trained models are below bicubic in terms of metrics.
 
@@ -158,9 +162,9 @@ All of trained models are below bicubic in terms of metrics.
     align: (left, right, right),
     [model], [test SSIM], [test PSNR],
     [bicubic], [0.90], [35.15],
-    [final], [0.87], [33.04],
+    [final], [0.88], [33.05],
   ),
-  caption: [Results of selected experiments.],
+  caption: [Comparison of final model to the bicubic baseline (quantitative)],
 )
 
 === Qualitative results
@@ -204,42 +208,50 @@ Average inference time: 85.70 ms/img (tested on 64 batches 4 images each)
 == Points table
 
 #table(
-  columns: (1fr, 2cm, 2cm),
-  [task], [points], [done],
-  [Problem (Super-resolution)], [3      ], [YES      ],
+  columns: (1fr, 2cm),
+  stroke: none,
+  table.header([task], [points]),
+  table.hline(),
+  [Problem (Super-resolution)], [3      ],
 
-  [*TOTAL POINTS* (Problem)], [3      ], [         ],
+  table.hline(),
+  [*TOTAL POINTS* (Problem)], [3      ],
+  table.hline(),
 
-  [Model (Ready: U-Net)], [1      ], [YES      ],
+  [Model (Ready: U-Net)], [1      ],
 
-  [Model (Ready: CARN)], [1      ], [YES      ],
+  [Model (Ready: CARN)], [1      ],
 
-  [*TOTAL POINTS* (Model)], [2      ], [         ],
+  table.hline(),
+  [*TOTAL POINTS* (Model)], [2      ],
+  table.hline(),
 
-  [Training: Overfitting some examples from the training set], [1      ], [YES      ],
+  [Training: Overfitting some examples from the training set], [1      ],
 
-  [Training: Data augmentation], [1      ], [YES       ],
+  [Training: Data augmentation], [1      ],
 
-  [Training: Testing various loss functions (at least 3)], [1      ], [YES ],
+  [Training: Testing various loss functions (at least 3)], [1      ],
 
-  [*TOTAL POINTS* (Training)], [3      ], [         ],
+  table.hline(),
+  [*TOTAL POINTS* (Training)], [3      ],
+  table.hline(),
 
-  [Tools: MLflow,Tensorboard, Neptune, Weights & Biases (along with some analysis of experiments) ],
-  [1      ],
-  [YES      ],
+  [Tools: MLflow,Tensorboard, Neptune, Weights & Biases (along with some analysis of experiments) ], [1      ],
 
-  [Tools: DVC], [2      ], [YES      ],
+  [Tools: DVC], [2      ],
 
-  [*TOTAL POINTS* (Tools)], [3      ], [         ],
+  table.hline(),
+  [*TOTAL POINTS* (Tools)], [3      ],
+  table.hline(),
+  [*TOTAL POINTS* (Problem)], [3      ],
 
-  [-], [-], [-],
-  [*TOTAL POINTS* (Problem)], [3      ], [         ],
+  [*TOTAL POINTS* (Model)], [2      ],
 
-  [*TOTAL POINTS* (Model)], [2      ], [         ],
+  [*TOTAL POINTS* (Dataset+Training+Tools+Report)], [6      ],
+  table.hline(),
 
-  [*TOTAL POINTS* (Dataset+Training+Tools+Report)], [4      ], [         ],
-
-  [*TOTAL POINTS*   ], [9      ], [         ],
+  [*TOTAL POINTS*   ], [ 11     ],
+  table.hline(),
 )
 
 #pagebreak()

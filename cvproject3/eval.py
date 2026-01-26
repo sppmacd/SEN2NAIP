@@ -26,8 +26,8 @@ model.load_state_dict(torch.load("models/best.pt"))
 
 test_metrics = {
     "loss": Loss(torch.nn.MSELoss()),
-    "ssim": SSIM(255),
-    "psnr": PSNR(255),
+    "ssim": SSIM(1),
+    "psnr": PSNR(1),
 }
 
 test_evaluator = create_supervised_evaluator(

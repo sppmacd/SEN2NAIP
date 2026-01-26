@@ -22,7 +22,7 @@ def main(
     model = Model().to(device)
     model.load_state_dict(torch.load("models/best.pt"))
 
-    dataset = Dataset(data_dir, augment=False)
+    dataset = Dataset(data_dir, augment=False, overfitting=True)
 
     for dd in dataset:
         lr, hr = dd

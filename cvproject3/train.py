@@ -111,7 +111,9 @@ def run(config: ConfigBox, live: dvclive.Live):
 
     batch_size = config.train.batch_size
 
-    train_dataset = Dataset("data/train", overfitting=overfitting)
+    train_dataset = Dataset(
+        "data/train", overfitting=overfitting, augment=not overfitting
+    )
 
     # Show some random prediction
     lr, hr = train_dataset[len(train_dataset) // 2]
