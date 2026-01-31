@@ -1,4 +1,4 @@
-**PLEASE GO TO THE [`report`](https://github.com/sppmacd/SEN2NAIP/tree/report) branch~~~**
+# **PLEASE GO TO THE [`report`](https://github.com/sppmacd/SEN2NAIP/tree/report) branch!!**
 
 # SEN2NAIP Super Resolution
 
